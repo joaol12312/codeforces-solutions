@@ -1,7 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-void resolver(const vector<int> lista) {
+void resolver(const vector<int>& lista) {
         int c,d;
         int conta=0;
         cin >> c >> d;
