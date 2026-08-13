@@ -53,7 +53,11 @@ void resolver() {
             }
         }
     }else{
+        if (b==0 and n==1){
+            cout<<"0"<<" "<<"0";
+        }else{
         cout << "-1" <<" " <<"-1";
+        }
     }
 }
 
