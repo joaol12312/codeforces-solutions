@@ -1,0 +1,55 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// 30 bits são suficientes pois 2^29 > 10^9
+const int MAX_LOG = 30; 
+
+int main() {
+    // Otimização de input/output, vital para C++ em problemas com muita leitura
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, q;
+    if (!(cin >> n >> q)) return 0;
+
+    // up[i][j] armazena o destino saindo do planeta i após 2^j pulos
+    // Tamanho n+1 porque os planetas são indexados de 1 a n
+    vector<vector<int>> up(n + 1, vector<int>(MAX_LOG));
+
+    // Lendo a primeira linha de teletransportadores (pulos de tamanho 2^0)
+    for (int i = 1; i <= n; i++) {
+        cin >> up[i][0];
+    }
+
+    // Pré-computação da tabela de Binary Lifting
+    for (int j = 1; j < MAX_LOG; j++) {
+        for (int i = 1; i <= n; i++) {
+            // O destino após 2^j pulos é equivalente a dar 2^(j-1) pulos,
+            // e depois, a partir do planeta alcançado, dar mais 2^(j-1) pulos
+            up[i][j] = up[up[i][j - 1]][j - 1];
+        }
+    }
+
+    // Processando as Q queries
+    for (int i = 0; i < q; i++) {
+        int x, k;
+        cin >> x >> k;
+
+        int current_planet = x;
+        
+        // Testa cada bit do número k
+        for (int j = 0; j < MAX_LOG; j++) {
+            // Se o j-ésimo bit de k for 1, damos um salto de tamanho 2^j
+            if (k & (1 << j)) {
+                current_planet = up[current_planet][j];
+            }
+        }
+        
+        // Imprime o planeta de destino
+        cout << current_planet << "\n";
+    }
+
+    return 0;
+}
