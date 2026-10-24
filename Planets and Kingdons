@@ -1,0 +1,77 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int MAXN = 100005;
+vector<int> adj[MAXN], rev_adj[MAXN];
+bool visited[MAXN];
+vector<int> order;
+int kingdom[MAXN];
+
+// Primeira DFS para determinar a ordem de finalização
+void dfs1(int u) {
+    visited[u] = true;
+    for (int v : adj[u]) {
+        if (!visited[v]) {
+            dfs1(v);
+        }
+    }
+    // Adicionado à lista após todos os seus descendentes serem processados
+    order.push_back(u);
+}
+
+// Segunda DFS no grafo reverso para agrupar os reinos
+void dfs2(int u, int k) {
+    kingdom[u] = k;
+    for (int v : rev_adj[u]) {
+        // Se o planeta ainda não tem reino, pertence ao reino atual k
+        if (!kingdom[v]) {
+            dfs2(v, k);
+        }
+    }
+}
+
+int main() {
+    // Otimização de input/output exigida para problemas em C++
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, m;
+    if (!(cin >> n >> m)) return 0;
+
+    for (int i = 0; i < m; i++) {
+        int a, b;
+        cin >> a >> b;
+        // Grafo original
+        adj[a].push_back(b);
+        // Grafo reverso
+        rev_adj[b].push_back(a);
+    }
+
+    // Passo 1: Executar DFS no grafo original
+    for (int i = 1; i <= n; i++) {
+        if (!visited[i]) {
+            dfs1(i);
+        }
+    }
+
+    // Passo 2 e 3: Executar DFS no grafo reverso pela ordem inversa de finalização
+    int k = 0;
+    for (int i = n - 1; i >= 0; i--) {
+        int u = order[i];
+        if (!kingdom[u]) {
+            k++; // Detetado um novo reino
+            dfs2(u, k);
+        }
+    }
+
+    // Imprimir o número de reinos e a identificação para cada planeta
+    cout << k << "\n";
+    for (int i = 1; i <= n; i++) {
+        cout << kingdom[i] << (i == n ? "" : " ");
+    }
+    cout << "\n";
+
+    return 0;
+}
