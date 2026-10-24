@@ -1,0 +1,99 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <map>
+
+using namespace std;
+
+// Usar long long para evitar overflow nos tempos de viagem e esperas
+const long long INF = 1e18;
+
+int main() {
+    // Otimização de I/O
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, m;
+    if (!(cin >> n >> m)) return 0;
+
+    // Lista de adjacências para o grafo: {vizinho, peso}
+    vector<vector<pair<int, long long>>> adj(n + 1);
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        long long w;
+        cin >> u >> v >> w;
+        adj[u].push_back({v, w});
+        adj[v].push_back({u, w});
+    }
+
+    // Estrutura para pré-processar os bloqueios de tempo de cada planeta
+    vector<map<long long, long long>> delay(n + 1);
+    for (int i = 1; i <= n; i++) {
+        int k;
+        cin >> k;
+        vector<long long> t(k);
+        for (int j = 0; j < k; j++) {
+            cin >> t[j];
+        }
+        
+        // Se existem bloqueios, processar de trás para a frente para agrupar contíguos
+        if (k > 0) {
+            long long nxt = t.back() + 1;
+            delay[i][t.back()] = nxt;
+            for (int j = k - 2; j >= 0; j--) {
+                if (t[j] == t[j + 1] - 1) {
+                    // Instantes consecutivos partilham o mesmo tempo de saída
+                    delay[i][t[j]] = nxt;
+                } else {
+                    // Quebra na sequência, definir novo tempo de saída
+                    nxt = t[j] + 1;
+                    delay[i][t[j]] = nxt;
+                }
+            }
+        }
+    }
+
+    // Fila de prioridade para o Dijkstra: {tempo_chegada, planeta}
+    vector<long long> dist(n + 1, INF);
+    priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<pair<long long, int>>> pq;
+
+    dist[1] = 0;
+    pq.push({0, 1});
+
+    while (!pq.empty()) {
+        long long d = pq.top().first;
+        int u = pq.top().second;
+        pq.pop();
+
+        // Ignorar se já encontrámos um caminho mais curto para este planeta
+        if (d > dist[u]) continue;
+        
+        // Otimização: Se chegámos ao planeta n, como os pesos são positivos, é a resposta final
+        if (u == n) break;
+
+        // Calcular tempo real de partida devido à chegada de outros viajantes
+        long long leave_time = d;
+        if (delay[u].count(d)) {
+            leave_time = delay[u][d];
+        }
+
+        // Relaxamento das arestas
+        for (auto edge : adj[u]) {
+            int v = edge.first;
+            long long w = edge.second;
+
+            if (leave_time + w < dist[v]) {
+                dist[v] = leave_time + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+
+    if (dist[n] == INF) {
+        cout << -1 << "\n";
+    } else {
+        cout << dist[n] << "\n";
+    }
+
+    return 0;
+}

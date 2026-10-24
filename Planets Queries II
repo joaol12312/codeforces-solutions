@@ -1,0 +1,129 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int MAX_LOG = 30;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, q;
+    if (!(cin >> n >> q)) return 0;
+
+    vector<vector<int>> up(n + 1, vector<int>(MAX_LOG));
+    for (int i = 1; i <= n; i++) {
+        cin >> up[i][0];
+    }
+
+    // Pré-computação da tabela de Binary Lifting
+    for (int j = 1; j < MAX_LOG; j++) {
+        for (int i = 1; i <= n; i++) {
+            up[i][j] = up[up[i][j - 1]][j - 1];
+        }
+    }
+
+    vector<int> vis(n + 1, 0);
+    vector<int> cycle_id(n + 1, 0);
+    vector<int> cycle_len(n + 1, 0);
+    vector<int> cycle_pos(n + 1, 0);
+    vector<int> depth(n + 1, 0);
+    int current_cycle = 1;
+
+    // Etapa 1: Encontrar ciclos
+    for (int i = 1; i <= n; i++) {
+        if (vis[i]) continue;
+        
+        int curr = i;
+        vector<int> path;
+        while (!vis[curr]) {
+            vis[curr] = 1;
+            path.push_back(curr);
+            curr = up[curr][0];
+        }
+
+        if (vis[curr] == 1) { // Ciclo encontrado neste trajeto
+            int start = -1;
+            for (int j = 0; j < path.size(); j++) {
+                if (path[j] == curr) {
+                    start = j;
+                    break;
+                }
+            }
+            int len = path.size() - start;
+            for (int j = start; j < path.size(); j++) {
+                int node = path[j];
+                cycle_id[node] = current_cycle;
+                cycle_len[node] = len;
+                cycle_pos[node] = j - start;
+            }
+            current_cycle++;
+        }
+
+        for (int node : path) {
+            vis[node] = 2; // Marcar como totalmente processado
+        }
+    }
+
+    // Etapa 2: Calcular profundidades das árvores
+    for (int i = 1; i <= n; i++) {
+        if (cycle_id[i]) continue;
+        int curr = i;
+        vector<int> path;
+        while (!cycle_id[curr]) {
+            path.push_back(curr);
+            curr = up[curr][0];
+        }
+        int d = depth[curr];
+        int cid = cycle_id[curr];
+        for (int j = path.size() - 1; j >= 0; j--) {
+            d++;
+            depth[path[j]] = d;
+            cycle_id[path[j]] = cid;
+        }
+    }
+
+    // Função auxiliar para avançar 'k' passos
+    auto advance = [&](int node, int k) {
+        for (int j = 0; j < MAX_LOG; j++) {
+            if (k & (1 << j)) {
+                node = up[node][j];
+            }
+        }
+        return node;
+    };
+
+    // Etapa 3: Responder às consultas
+    for (int i = 0; i < q; i++) {
+        int a, b;
+        cin >> a >> b;
+
+        if (cycle_id[a] != cycle_id[b]) {
+            cout << -1 << "\n";
+            continue;
+        }
+
+        if (depth[a] < depth[b]) {
+            cout << -1 << "\n";
+            continue;
+        }
+
+        if (depth[b] > 0) {
+            // b está numa árvore
+            int diff = depth[a] - depth[b];
+            if (advance(a, diff) == b) {
+                cout << diff << "\n";
+            } else {
+                cout << -1 << "\n";
+            }
+        } else {
+            // b está no ciclo
+            int a_in_cycle = advance(a, depth[a]);
+            int dist_in_cycle = (cycle_pos[b] - cycle_pos[a_in_cycle] + cycle_len[a_in_cycle]) % cycle_len[a_in_cycle];
+            cout << depth[a] + dist_in_cycle << "\n";
+        }
+    }
+
+    return 0;
+}
